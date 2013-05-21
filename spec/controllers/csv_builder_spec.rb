@@ -36,6 +36,22 @@ class CsvBuilderReportsController < ApplicationController
     end
   end
 
+  def bom
+    respond_to do |format|
+      @streaming = false
+      @bom = "\xEF\xBB\xBF"
+      format.csv
+    end
+  end
+
+  def bom_streaming
+    respond_to do |format|
+      @streaming = true
+      @bom = "\xEF\xBB\xBF"
+      format.csv { render :bom }
+    end
+  end
+
 end
 
 if defined?(Rails) and Rails.version < '3'
@@ -98,6 +114,22 @@ describe CsvBuilderReportsController do
     it "handles very large downloads without timing out" do
       get 'massive', :format => 'csv'
       response.body.to_s.length.should == 24890
+    end
+
+    describe "byte-order mark" do
+      context "when not streaming" do
+        before{ get 'bom', :format => 'csv' }
+        it "should render the byte-order mark" do
+          response.body.should =~ /^\xEF\xBB\xBF/
+        end
+      end
+      context "when streaming" do
+        before{ get 'bom_streaming', :format => 'csv' }
+        # TODO: this case does not work
+        # it "should render the byte-order mark" do
+        #   response.body.should =~ /^\xEF\xBB\xBF/
+        # end
+      end
     end
   end
 end

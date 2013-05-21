@@ -118,7 +118,7 @@ module CsvBuilder # :nodoc:
             csv = CsvBuilder::TransliteratingFilter.new(faster_csv, @input_encoding || 'UTF-8', @output_encoding || 'ISO-8859-1')
             #{template.source}
           end
-          output
+          (@bom || '') + output
         end
       rescue Exception => e
         Rails.logger.warn("Exception \#{e} \#{e.message} with class \#{e.class.name} thrown when rendering CSV")
