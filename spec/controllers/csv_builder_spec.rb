@@ -3,7 +3,7 @@
 require File.expand_path(File.dirname(__FILE__) + '/../spec_helper')
 
 class CsvBuilderReportsController < ApplicationController
-  before_filter {|c| c.prepend_view_path(File.expand_path(File.dirname(__FILE__) + '/../templates')) }
+  before_action {|c| c.prepend_view_path(File.expand_path(File.dirname(__FILE__) + '/../templates')) }
 
   def simple
     # dummy
@@ -54,25 +54,26 @@ class CsvBuilderReportsController < ApplicationController
 
 end
 
-if defined?(Rails) and Rails.version < '3'
-  ActionController::Routing::Routes.draw { |map| map.connect ':controller/:action' }
-else
-  Rails.application.routes.draw { get ':controller/:action' }
+Rails.application.routes.draw do
+  get 'csv_builder_reports/simple', to: 'csv_builder_reports#simple'
+  get 'csv_builder_reports/complex', to: 'csv_builder_reports#complex'
+  get 'csv_builder_reports/encoding', to: 'csv_builder_reports#encoding'
+  get 'csv_builder_reports/massive', to: 'csv_builder_reports#massive'
 end
 
 
-describe CsvBuilderReportsController do
+describe CsvBuilderReportsController, type: :controller do
   render_views
 
   describe "Simple layout" do
     it "still responds to HTML" do
       get 'simple'
-      response.should be_success
+      expect(response).to have_http_status(:success)
     end
 
     it "responds to CSV" do
       get 'simple', :format => 'csv'
-      response.should be_success
+      expect(response).to have_http_status(:success)
     end
   end
 
@@ -89,31 +90,31 @@ describe CsvBuilderReportsController do
       end
 
       it "transliterates to ASCII when required" do
-        get 'encoding', :format => 'csv', :encoding => 'ASCII'
-        response.body.to_s.should == expected_ascii
+        get 'encoding', params: {format: 'csv', encoding: 'ASCII'}
+        expect(response.body.to_s).to eq(expected_ascii)
       end
 
       it "keeps output in UTF-8 when required" do
-        get 'encoding', :format => 'csv', :encoding => 'UTF-8'
-        response.body.to_s.should == expected_utf8
+        get 'encoding', params: {format: 'csv', encoding: 'UTF-8'}
+        expect(response.body.to_s).to eq(expected_utf8)
       end
     end
 
     it "passes csv options" do
       get 'complex', :format => 'csv'
-      response.body.to_s.should == generate({ :col_sep => "\t" })
+      expect(response.body.to_s).to eq(generate(col_sep: "\t" ))
     end
 
     it "sets filename" do
       get 'complex', :format => 'csv'
-      response.headers['Content-Disposition'].should match(/filename="some_complex_filename.csv"/)
+      expect(response.headers['Content-Disposition']).to match(/filename="some_complex_filename.csv"/)
     end
 
     #TODO: unfortunately, this test only verifies that streaming will behave like single-shot response, because rspec's testresponse doesn't
     #support streaming. Streaming has to be manually verified with a browser and stand-alone test application. see https://github.com/fawce/test_csv_streamer
     it "handles very large downloads without timing out" do
       get 'massive', :format => 'csv'
-      response.body.to_s.length.should == 24890
+      expect(response.body.to_s.length).to eq(24890)
     end
 
     describe "byte-order mark" do

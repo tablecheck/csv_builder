@@ -1,0 +1,5 @@
+source 'http://rubygems.org'
+
+gemspec :path => File.expand_path(File.join(File.dirname(__FILE__), '../..'))
+
+gem 'fastercsv', :platforms => :ruby_18
